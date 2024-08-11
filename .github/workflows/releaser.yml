@@ -42,6 +42,7 @@ jobs:
         cd ${{ github.workspace }}
         mkdir publish
         cp ${{ matrix.configuration }}/*.dll publish
+        cp script/*.anm publish
         cp *.md publish
         cp LICENSE publish
         cd publish
