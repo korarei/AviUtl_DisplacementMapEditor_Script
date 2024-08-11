@@ -78,7 +78,7 @@ jobs:
         count=0
         IFS=$'\n'
         while read line; do
-          if [ ${count} = 0 ] && [[ ${line} =~ "更新履歴" ]]; then
+          if [ ${count} = 0 ] && [[ ${line} =~ "Change Log" ]]; then
             count=1
           elif [ ${count} = 1 ] && [[ ${line} =~ "*v" ]]; then
             count=2
