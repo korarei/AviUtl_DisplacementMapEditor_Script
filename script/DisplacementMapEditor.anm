@@ -1,0 +1,55 @@
+--track0:方向[°],-3600,3600,0
+--track1:強度,0,10,1,0.01
+--track2:基準角[°],-3600,3600,0
+--track3:分割数,1,100,2,1
+--dialog:*mode,_1=1; *色選択モード,_2=1; └0xRRGGBB,_3={}; 市松模様/chk,_4=0; *mapタイプ,_5=1; mapパターン,_6=2; 分割ターゲット,_7={1}; 分割倍率,_8={1}; 垂直分割数,_9=0; スレッド数,_10=0; 簡易説明/chk,_11=0; 説明ページ[1-4],_12=1;
+
+local check, R = pcall(require, "rikky_module")
+if check then
+    local mode_list={"彩色モード", "修正モード", "MAP生成モード"}
+    local color_mode_list={"全て", "除外", "包含"}
+    local map_type_list = {"正n角形", "扉"}
+    R.list(1, mode_list, 2, color_mode_list, 5, map_type_list)
+end
+
+local direction = obj.track0
+local intensity = obj.track1
+local initial_angle = obj.track2
+local divisions = obj.track3
+local mode = _1 _1 = nil
+local color_selection_mode = _2 _2 = nil
+local color_table_index = _3 _3 = nil
+local checkbox_flip = _4 == 1 _4 = nil
+local map_type = _5 _5 = nil
+local map_pattern = _6 _6 = nil
+local subdivison_target_table_index = _7 _7 = nil
+local subdivison_target_scale_table_index = _8 _8 = nil
+local normal_divisions = _9 _9 = nil
+local threads = _10 _10 = nil
+local checkbox_inst = _11 == 1 _11 = nil
+local inst_page = _12 _12 = nil
+
+if checkbox_inst then
+    setfont("游ゴシック",30)
+
+    if inst_page == 1 then
+        obj.load("text", "共通の設定項目\n\n方向：移動する方向を度数で指定\n強度：移動の強さ\nスレッド数：画像処理のスレッド数。0で自動設定（max）")
+    elseif inst_page == 2 then
+        obj.load("text", "彩色モード（角度を入力して色を塗る）\n\n共通項目のみ使用")
+    elseif inst_page == 3 then
+        obj.load("text", "修正モード（既存のmapの色を変える（向きを変える））\n\n共通項目で調整\n色選択モード：特定の色（下の項目）を除外したり包含したりする\n└0xRRGGBB：この項目にtable形式で色（16進数）を入力すると色選択モードに応じて色を除外などする")
+    elseif inst_page == 4 then
+        obj.load("text", "MAP生成モード（それっぽいmapを作る）\n\n共通項目で調整\n基準角：スタートポイント\n分割数：分割数\n市松模様：交互に方向を反転する\nmapタイプ：万華鏡みたいに動くやつと扉みたいに動くやつの2つ\nmapパターン：map_type 1のみ。法線方向の分割タイプを指定。\n1：普通に分割\n2：2^n分割\n分割ターゲット：何を基準に分割するかをtableで指定\n（maptype1ではnormal方向（要素数1）、2ではx, y方向を指定（要素数2）要素2は省略可で省略した場合要素1と同じになる）\n以下モード\n1：短辺\n2：長辺\n3：対角線\n4：pixel\n分割倍率：分割ターゲットを何倍するか、pixelは数値をtableで指定（要素数の判定は上の項目と同じ）\n垂直分割数：法線方向に分割する数")
+    end
+
+    obj.draw()
+else
+    local displace = require("DisplacementMapEditor")
+    local chk, mes = displace.edit(mode, direction, intensity, initial_angle, divisions, color_selection_mode, color_table_index, checkbox_flip, map_type, map_pattern, subdivison_target_table_index, subdivison_target_scale_table_index, normal_divisions, threads)
+
+    if not chk then
+        setfont("游ゴシック",50)
+        obj.load("text", mes)
+        obj.draw()
+    end
+end

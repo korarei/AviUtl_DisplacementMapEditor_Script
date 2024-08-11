@@ -1,0 +1,97 @@
+name: releaser
+
+on:
+  push:
+    tags:
+      - '*'
+
+env:
+  SOLUTION_NAME: DisplacementMapEditor
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        configuration: [Release]
+        platform: [x86]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Download lua
+      shell: pwsh
+      run: |
+        Invoke-WebRequest -UserAgent "Wget" -Uri https://sourceforge.net/projects/luabinaries/files/5.1.4/Windows%20Libraries/lua5_1_4_Win32_dll8_lib.zip/download -OutFile "lua5_1_4_Win32_dll8_lib.zip"
+        7z x -o".\dll_src\lua5_1_4_Win32_dll8_lib" lua5_1_4_Win32_dll8_lib.zip
+
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Build
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: msbuild /m /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }} ${{ env.SOLUTION_NAME }}.sln
+
+    - name: Create Zip
+      shell: pwsh
+      run: |
+        cd ${{ github.workspace }}
+        mkdir publish
+        cp ${{ matrix.configuration }}/*.dll publish
+        cp *.md publish
+        cp LICENSE publish
+        cd publish
+        7z a DisplacementMapEditor.zip *
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: publish
+        path: ${{ github.workspace }}/publish/DisplacementMapEditor.zip
+
+  releaser:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+    - name: Chekout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - uses: actions/download-artifact@v4
+      with:
+        name: publish
+        path: artifacts
+
+    - name: Create release note
+      run: |
+        count=0
+        IFS=$'\n'
+        while read line; do
+          if [ ${count} = 0 ] && [[ ${line} =~ "更新履歴" ]]; then
+            count=1
+          elif [ ${count} = 1 ] && [[ ${line} =~ "*v" ]]; then
+            count=2
+          elif [ ${count} = 2 ] && [[ ${line} =~ "*v" ]]; then
+            break
+          elif [ ${count} = 2 ]; then
+            echo ${line} >> ReleaseNote.txt
+          fi
+        done < README.md
+
+    - name: Create release
+      uses: softprops/action-gh-release@v2
+      with:
+        name: ${{ github.ref_name }}
+        files: '${{ github.workspace }}/artifacts/*.zip'
+        body_path: ReleaseNote.txt
