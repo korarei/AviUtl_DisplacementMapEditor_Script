@@ -29,6 +29,6 @@ MAPを生成する。現在は2種類のmapを生成可能。
 ## LICENSE
 LICENSEファイルに記載
 
-## 更新履歴
+## Change Log 
 - **v1.0.0**
-  - release
+  - relase
